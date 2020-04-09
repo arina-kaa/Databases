@@ -35,9 +35,18 @@ CREATE TABLE IF NOT EXISTS room_in_booking (
   id_room_in_booking serial PRIMARY KEY,
   id_booking int NOT NULL,
   id_room int NOT NULL,
-  checking_date date NOT NULL,
+  checkin_date date NOT NULL,
   checkout_date date NOT NULL
 );
+
+-- Испорт данных
+-- После импорта выполнить:
+SELECT SETVAL('booking_id_booking_seq', (SELECT MAX(id_booking) FROM booking));
+SELECT SETVAL('client_id_client_seq', (SELECT MAX(id_client) FROM client));
+SELECT SETVAL('hotel_id_hotel_seq', (SELECT MAX(id_hotel) FROM hotel));
+SELECT SETVAL('room_id_room_seq', (SELECT MAX(id_room) FROM room));
+SELECT SETVAL('room_category_id_room_category_seq', (SELECT MAX(id_room_category) FROM room_category));
+SELECT SETVAL('room_in_booking_id_room_in_booking_seq', (SELECT MAX(id_room_in_booking) FROM room_in_booking));
 
 -- 1. Добавить внешние ключи
 ALTER TABLE booking
@@ -68,7 +77,7 @@ FROM
 WHERE
   h.name = 'Космос'
   AND rc.name = 'Люкс'
-  AND rib.checking_date <= '2019-04-01'
+  AND rib.checkin_date <= '2019-04-01'
   AND rib.checkout_date > '2019-04-01'
 ;
 
@@ -85,7 +94,7 @@ FROM
   INNER JOIN room_category rc ON r.id_room_category = rc.id_room_category
   LEFT JOIN room_in_booking rib ON (
     r.id_room = rib.id_room
-    AND rib.checking_date <= '2019-04-22'
+    AND rib.checkin_date <= '2019-04-22'
     AND rib.checkout_date > '2019-04-22'
   )
 WHERE
@@ -106,7 +115,7 @@ FROM
   INNER JOIN client c ON b.id_client = c.id_client
 WHERE
   h.name = 'Космос'
-  AND rib.checking_date <= '2019-03-23'
+  AND rib.checkin_date <= '2019-03-23'
   AND rib.checkout_date > '2019-03-23'
 GROUP BY rc.name
 ;
@@ -155,7 +164,7 @@ WHERE
     WHERE
       h.name = 'Космос'
       AND rc.name = 'Бизнес'
-      AND rib.checking_date = '2019-05-10'
+      AND rib.checkin_date = '2019-05-10'
   )
 ;
 
@@ -165,9 +174,48 @@ WHERE
 -- room_in_booking с id_room_in_booking = 5 и 2154 являются примером
 -- неправильного состояния, которые необходимо найти. Результирующий кортеж
 -- выборки должен содержать информацию о двух конфликтующих номерах.
-
+SELECT
+  h.name hotel_name,
+  r.number room_number,
+  rib.checkin_date,
+  rib.checkout_date,
+  h2.name c_hotel_name,
+  r2.number c_room_number,
+  rib2.checkin_date c_checkin_date,
+  rib2.checkout_date c_checkout_date
+FROM
+  room_in_booking rib
+  INNER JOIN room r ON rib.id_room = r.id_room
+  INNER JOIN hotel h ON r.id_hotel = h.id_hotel
+  INNER JOIN room_in_booking rib2 ON (
+    rib.id_room = rib2.id_room
+    AND rib.id_room_in_booking <> rib2.id_room_in_booking
+    AND rib2.checkin_date BETWEEN rib.checkin_date AND rib.checkout_date
+  )
+  INNER JOIN room r2 ON rib2.id_room = r2.id_room
+  INNER JOIN hotel h2 ON r2.id_hotel = h2.id_hotel
+;
 
 -- 8. Создать бронирование в транзакции.
+BEGIN;
 
+INSERT INTO client (name, phone)
+VALUES ('Яворивский Ефрем Максимович', '7(553)676-48-34');
+
+INSERT INTO booking (id_client, booking_date)
+VALUES ((SELECT id_client FROM client ORDER BY 1 DESC LIMIT 1), NOW());
+
+INSERT INTO room_in_booking (id_booking, id_room, checkin_date, checkout_date)
+VALUES ((SELECT booking.id_booking FROM booking ORDER BY 1 DESC LIMIT 1), 10, '2020-04-15', '2020-04-22');
+
+-- ROLLBACK;
+COMMIT;
 
 -- 9. Добавить необходимые индексы для всех таблиц.
+CREATE INDEX idx_client ON booking(id_client);
+CREATE INDEX idx_phone ON client(phone);
+CREATE INDEX idx_hotel ON room(id_hotel);
+CREATE INDEX idx_room_category ON room(id_room_category);
+CREATE INDEX idx_booking ON room_in_booking(id_booking);
+CREATE INDEX idx_room ON room_in_booking(id_room);
+CREATE INDEX idx_checkin_checkout ON room_in_booking(checkin_date, checkout_date);
