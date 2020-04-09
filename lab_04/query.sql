@@ -454,7 +454,7 @@ WHERE
 ;
 
 -- 7. SELECT GROUP BY с функциями агрегации
-
+-- поиск минимальной и максимальной скидки клиента
 SELECT
   MIN(c.discount_percent) min_client_discount,
   MAX(c.discount_percent) max_client_discount
@@ -463,6 +463,7 @@ WHERE
   c.discount_percent > 0
 ;
 
+-- вычисление средней продолжительности оказания услуги - Окрашивание волос любой длины
 SELECT
   AVG(es.duration) avg_service_duration
 FROM
@@ -474,6 +475,7 @@ WHERE
   s.name LIKE 'Окрашивание%'
 ;
 
+-- вычисление суммарной выручки с клиента в разрезе по датам
 SELECT
   c.last_name,
   c.first_name,
@@ -487,6 +489,7 @@ FROM
 GROUP BY c.id_client, c.last_name, c.first_name, cv.date
 ;
 
+-- вычисление количества посещений клиента в 2020 году в разрезе по месяцам
 SELECT
   c.last_name,
   c.first_name,
@@ -501,7 +504,7 @@ ORDER BY c.last_name, visit_month
 ;
 
 -- 8. SELECT GROUP BY + HAVING
-
+-- рейтинг наиболее посещаемых месяцев по клиентам
 SELECT
   c.last_name,
   c.first_name,
@@ -516,6 +519,7 @@ HAVING COUNT(cv.id_client_visit) > 1
 ORDER BY visit_count DESC, c.last_name
 ;
 
+-- рейтинг выручки по месяцам и клиентам, у которых затраты превышают 1500
 SELECT
   c.last_name,
   c.first_name,
@@ -531,6 +535,7 @@ HAVING SUM(es.cost) > 1500
 ORDER BY amount DESC
 ;
 
+-- рейтинг мастеров по количестку оказанных услуг
 SELECT
   e.last_name,
   e.first_name,
@@ -546,7 +551,7 @@ ORDER BY services_count DESC
 ;
 
 -- 9. SELECT JOIN
-
+-- список салонов, где оказывают услугу - Стрижка
 SELECT DISTINCT
   s.city,
   s.address
@@ -566,6 +571,7 @@ WHERE
   ss.name IS NULL
 ;
 
+-- список салонов, где оказывают услугу - Стрижка с ипользованием RIGHT OUTER JOIN
 SELECT DISTINCT
   s.city,
   s.address
@@ -578,6 +584,7 @@ WHERE
   es.id_employee_service  IS NULL
 ;
 
+-- список записей клиентов на услугу - Стрижка с 1 марта 2020 года до обеда
 SELECT
   c.last_name,
   c.first_name,
@@ -596,6 +603,7 @@ WHERE
   AND s.name = 'Стрижка'
 ;
 
+-- все визиты клиентов с 1 марта 2020 года
 SELECT
   c.last_name,
   c.first_name,
@@ -606,7 +614,7 @@ FROM
 ;
 
 -- 10. Подзапросы
-
+-- список всех записей клиентов на маникюр по салонам
 SELECT
   cv.date,
   cvs.scheduled_start_time,
@@ -629,6 +637,7 @@ WHERE
   )
 ;
 
+-- рейтинг клиентов по затратам по месяцам
 SELECT
   c.last_name,
   c.first_name,
