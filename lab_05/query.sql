@@ -92,13 +92,15 @@ FROM
   hotel h
   INNER JOIN room r ON h.id_hotel = r.id_hotel
   INNER JOIN room_category rc ON r.id_room_category = rc.id_room_category
-  LEFT JOIN room_in_booking rib ON (
-    r.id_room = rib.id_room
-    AND rib.checkin_date <= '2019-04-22'
-    AND rib.checkout_date > '2019-04-22'
-  )
 WHERE
-  rib.id_room_in_booking IS NULL
+  r.id_room NOT IN (
+    SELECT rib.id_room
+    FROM
+      room_in_booking rib
+    WHERE
+      rib.checkin_date <= '2019-04-22'
+      AND rib.checkout_date > '2019-04-22'
+  )
 ;
 
 -- 4. Дать количество проживающих в гостинице “Космос” на 23 марта по каждой
@@ -135,14 +137,18 @@ FROM
   INNER JOIN room_category rc ON r.id_room_category = rc.id_room_category
   INNER JOIN room_in_booking rib ON rib.id_room_in_booking = (
     SELECT
-      MAX(trib.id_room_in_booking)
+      trib.id_room_in_booking
     FROM room_in_booking trib
     WHERE
       trib.id_room = r.id_room
       AND TO_CHAR(trib.checkout_date, 'YYYY-MM') = '2019-04'
+    ORDER BY trib.checkout_date DESC
+    LIMIT 1
   )
   INNER JOIN booking b ON rib.id_booking = b.id_booking
   INNER JOIN client c ON b.id_client = c.id_client
+WHERE
+  h.name = 'Космос'
 ;
 
 -- 6. Продлить на 2 дня дату проживания в гостинице “Космос” всем клиентам
@@ -175,25 +181,23 @@ WHERE
 -- неправильного состояния, которые необходимо найти. Результирующий кортеж
 -- выборки должен содержать информацию о двух конфликтующих номерах.
 SELECT
-  h.name hotel_name,
-  r.number room_number,
+  rib.id_room_in_booking,
+  rib.id_booking,
+  rib.id_room,
   rib.checkin_date,
   rib.checkout_date,
-  h2.name c_hotel_name,
-  r2.number c_room_number,
-  rib2.checkin_date c_checkin_date,
-  rib2.checkout_date c_checkout_date
+  rib2.id_room_in_booking,
+  rib2.id_booking,
+  rib2.id_room,
+  rib2.checkin_date,
+  rib2.checkout_date
 FROM
   room_in_booking rib
-  INNER JOIN room r ON rib.id_room = r.id_room
-  INNER JOIN hotel h ON r.id_hotel = h.id_hotel
   INNER JOIN room_in_booking rib2 ON (
     rib.id_room = rib2.id_room
     AND rib.id_room_in_booking <> rib2.id_room_in_booking
-    AND rib2.checkin_date BETWEEN rib.checkin_date AND rib.checkout_date
+    AND rib2.checkin_date BETWEEN rib.checkin_date AND rib.checkout_date + INTERVAL '-1' DAY
   )
-  INNER JOIN room r2 ON rib2.id_room = r2.id_room
-  INNER JOIN hotel h2 ON r2.id_hotel = h2.id_hotel
 ;
 
 -- 8. Создать бронирование в транзакции.
