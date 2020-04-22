@@ -577,11 +577,12 @@ SELECT DISTINCT
   s.address
 FROM
   employee_service es
-  INNER JOIN service sv ON es.id_service = sv.id_service AND sv.name = 'Стрижка'
+  INNER JOIN service sv ON es.id_service = sv.id_service
   RIGHT OUTER JOIN employee_salon_position esp ON es.id_employee_salon_position = esp.id_employee_salon_position
   INNER JOIN salon s ON esp.id_salon = s.id_salon
 WHERE
   es.id_employee_service  IS NULL
+  AND sv.name = 'Стрижка'
 ;
 
 -- список записей клиентов на услугу - Стрижка с 1 марта 2020 года до обеда
