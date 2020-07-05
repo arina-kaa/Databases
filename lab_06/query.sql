@@ -166,3 +166,7 @@ CREATE INDEX idx_pharmacy ON "order"(id_pharmacy);
 CREATE INDEX idx_date ON "order"(date);
 CREATE INDEX idx_company_prod ON production(id_company);
 CREATE INDEX idx_medicine ON production(id_medicine);
+
+CREATE INDEX idx_date ON "order"(date);
+CREATE INDEX idx_price ON production(price);
+CREATE INDEX idx_cure_duration ON medicine(cure_duration);
